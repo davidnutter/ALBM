@@ -3,6 +3,7 @@ module bayesian_mod
 ! Purpose: this module governs the Monte Carlo analysis.
 !
 !---------------------------------------------------------------------------------
+
    use shr_ctrl_mod
    use shr_typedef_mod
    use shr_param_mod
@@ -10,12 +11,14 @@ module bayesian_mod
    use costfunc_mod
    use read_data_mod
    use io_utilities_mod
-   use ifport 
+!   use ifport 
    use mpi
 
    implicit none
+   intrinsic signal
    private
    public :: RunMonteCarlo
+
    ! current sample Id
    integer :: cur_sample
 
@@ -145,7 +148,9 @@ contains
       integer :: i4ret, lakeId, error
       real(r8) :: sir
 
-      i4ret = SIGNALQQ(SIG$FPE, hand_fpe)
+!      i4ret = SIGNALQQ(SIG$FPE, hand_fpe)
+      call signal( SIG_FPE , hand_fpe, i4ret)
+
       ! read lake information (i.e. depth, location ...)
       lakeId = lake_range(1)
       call ReadLakeName(lakeId)
@@ -173,35 +178,53 @@ contains
    ! Purpose: some utilities for exceptions: SIG$FPE, SIG$ABORT, SIG$SEGV
    !
    !------------------------------------------------------------------------------
-   function hand_fpe(sigid, except)
+   function hand_fpe(sigid)
       !DEC$ ATTRIBUTES C :: hand_fpe
-      use ifport
+      !use ifport
       !use ifcore
       INTEGER(4) :: hand_fpe
       INTEGER(2) :: sigid, except
 
-      if (sigid/=SIG$FPE) then
+      if (sigid/=SIG_FPE) then
          hand_fpe = 1
          return
       end if
-      select case(except)
-         case( FPE$INVALID )
-            print *, ' Floating point exception: Invalid number'
-         case( FPE$DENORMAL )
-            print *, ' Floating point exception: Denormalized number'
-         case( FPE$ZERODIVIDE )
-            print *, ' Floating point exception: Zero divide'
-         case( FPE$OVERFLOW )
-            print *, ' Floating point exception: Overflow'
-         case( FPE$UNDERFLOW )
-            print *, ' Floating point exception: Underflow'
-         case( FPE$INEXACT )
-            print *, ' Floating point exception: Inexact precision'
-         case default
-            print *, ' Floating point exception: Non-IEEE type'
-      end select
+
+      ! Note by David Nutter 2023-03-21:
+      !
+      ! Commented out this Intel-specific signal handler so we can use
+      ! GNU FORTRAN which handles FPE exceptions using semantics offered
+      ! by signal(t). Since sighandler_t does not provide for
+      ! gathering exception information beyond the bare signal, we
+      ! can't explain what specific floating point exception we got.
+      !
+      ! We could do a better job with the ieee_features intrinsic as
+      ! discussed here but this is a bigger porting effort than I
+      ! really want at this point
+      !
+      ! https://gcc.gnu.org/onlinedocs/gfortran/intrinsic-modules/ieee-modules-ieeeexceptions-ieeearithmetic-and-ieeefeatures.html
+      ! 
+      ! Will also need to turn on the FPE exception handling when compiling 
+      ! (-fbacktrace -ffpe-trap=zero,overflow,underflow) for this to work at all
+
+      ! select case(except)
+      !    case( FPE$INVALID )
+      !       print *, ' Floating point exception: Invalid number'
+      !    case( FPE$DENORMAL )
+      !       print *, ' Floating point exception: Denormalized number'
+      !    case( FPE$ZERODIVIDE )
+      !       print *, ' Floating point exception: Zero divide'
+      !    case( FPE$OVERFLOW )
+      !       print *, ' Floating point exception: Overflow'
+      !    case( FPE$UNDERFLOW )
+      !       print *, ' Floating point exception: Underflow'
+      !    case( FPE$INEXACT )
+      !       print *, ' Floating point exception: Inexact precision'
+      !    case default
+      !       print *, ' Floating point exception: Non-IEEE type'
+      ! end select
       !CALL TRACEBACKQQ(trim(header), USER_EXIT_CODE=-1)
-      print *, 'failed sample ', cur_sample, sa_params 
+      print *, 'failed sample due to floating point exception', cur_sample, sa_params 
       hand_fpe = 1
    end function
 

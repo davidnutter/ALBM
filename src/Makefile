@@ -125,7 +125,7 @@ shr_ctrl_mod.o :	shr_ctrl_mod.f90		shr_kind_mod.o			\
 shr_typedef_mod.o :	shr_typedef_mod.f90	shr_kind_mod.o
 							$(f90comp) shr_typedef_mod.f90
 shr_kind_mod.o :	shr_kind_mod.f90
-						$(f90comp) shr_kind_mod.f90
+						$(f90comp) -fno-range-check shr_kind_mod.f90
 # Cleaning everything
 .PHONY :	clean
 clean :		

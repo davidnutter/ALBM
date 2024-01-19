@@ -9,7 +9,7 @@ module math_utilities_mod
    use shr_ctrl_mod,       only : inft => INFINITESIMAL_E8, inf => INFINITE_E8, &
                                   TOL_E8
    use shr_typedef_mod,    only : RungeKuttaCache1D, RungeKuttaCache2D
-   use ifport
+!   use ifport
 
    implicit none
    integer, parameter :: adaptive_mode = 101, fixed_mode = 102
@@ -633,6 +633,56 @@ contains
       implicit none
       real(r8), intent(in) :: array(:)
       real(r8), intent(in) :: obj
+      integer, intent(out) :: idx
+      integer :: middle, first, last
+      logical :: ascend
+
+      first = 1
+      last = size(array)
+      ascend = (array(first)<array(last))
+      if (ascend) then
+         if (obj<=array(first)) then
+            idx = 1
+            return
+         else if (obj>=array(last)) then
+            idx = last
+            return
+         end if
+      else
+         if (obj>=array(first)) then
+            idx = 1
+            return
+         else if (obj<=array(last)) then
+            idx = last
+            return
+         end if
+      end if
+      do while (last>first)
+         middle = (first+last)/2
+         if (array(middle)==obj) then
+            last = middle
+            exit
+         else if (array(middle)<obj) then
+            if (ascend) then
+               first = middle + 1
+            else
+               last = middle
+            end if
+         else
+            if (ascend) then
+               last = middle
+            else
+               first = middle + 1
+            end if
+         end if
+      end do
+      idx = last - 1
+   end subroutine
+
+   subroutine BinarySearchInteger4(array, obj, idx)
+      implicit none
+      integer(4), intent(in) :: array(:)
+      integer(4), intent(in) :: obj
       integer, intent(out) :: idx
       integer :: middle, first, last
       logical :: ascend

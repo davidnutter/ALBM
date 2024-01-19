@@ -80,6 +80,13 @@ module shr_param_mod
    ! Monte Carlo sample file and result file
    character(cx) :: mc_file, sa_file
 
+
+   !define the constants we need from signal.h for handling in
+   !bayesian_mod.f90, simulation_mod.f90 etc
+   integer, parameter :: SIG_ABRT = 6
+   integer, parameter :: SIG_FPE  = 8
+   integer, parameter :: SIG_SEGV = 11
+
 contains
    subroutine LoadSensitiveParameters(params)
       implicit none

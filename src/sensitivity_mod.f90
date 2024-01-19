@@ -9,7 +9,7 @@ module sensitivity_mod
    use sim_coupler_mod
    use read_data_mod
    use io_utilities_mod
-   use ifport 
+!   use ifport 
    use mpi
 
    implicit none
@@ -128,7 +128,9 @@ contains
       integer :: i4ret, lakeId, error
       real(r8) :: sir(NOUT)
 
-      i4ret = SIGNALQQ(SIG$FPE, hand_fpe)
+      !i4ret = SIGNALQQ(SIG$FPE, hand_fpe)
+      call signal(SIG_FPE, hand_fpe, i4ret)
+
       ! read lake information (i.e. depth, location ...)
       lakeId = lake_range(1)
       call ReadLakeName(lakeId)
@@ -246,33 +248,35 @@ contains
    !------------------------------------------------------------------------------
    function hand_fpe(sigid, except)
       !DEC$ ATTRIBUTES C :: hand_fpe
-      use ifport
+      !use ifport
       !use ifcore
       INTEGER(4) :: hand_fpe
       INTEGER(2) :: sigid, except
 
-      if (sigid/=SIG$FPE) then
+      if (sigid/=SIG_FPE) then
          hand_fpe = 1
          return
       end if
-      select case(except)
-         case( FPE$INVALID )
-            print *, ' Floating point exception: Invalid number'
-         case( FPE$DENORMAL )
-            print *, ' Floating point exception: Denormalized number'
-         case( FPE$ZERODIVIDE )
-            print *, ' Floating point exception: Zero divide'
-         case( FPE$OVERFLOW )
-            print *, ' Floating point exception: Overflow'
-         case( FPE$UNDERFLOW )
-            print *, ' Floating point exception: Underflow'
-         case( FPE$INEXACT )
-            print *, ' Floating point exception: Inexact precision'
-         case default
-            print *, ' Floating point exception: Non-IEEE type'
-      end select
+      ! See note in hand_fpe in bayesian_mod.f90
+      !
+      ! select case(except)
+      !    case( FPE$INVALID )
+      !       print *, ' Floating point exception: Invalid number'
+      !    case( FPE$DENORMAL )
+      !       print *, ' Floating point exception: Denormalized number'
+      !    case( FPE$ZERODIVIDE )
+      !       print *, ' Floating point exception: Zero divide'
+      !    case( FPE$OVERFLOW )
+      !       print *, ' Floating point exception: Overflow'
+      !    case( FPE$UNDERFLOW )
+      !       print *, ' Floating point exception: Underflow'
+      !    case( FPE$INEXACT )
+      !       print *, ' Floating point exception: Inexact precision'
+      !    case default
+      !       print *, ' Floating point exception: Non-IEEE type'
+      ! end select
       !CALL TRACEBACKQQ(trim(header), USER_EXIT_CODE=-1)
-      print *, 'failed sample ', cur_sample, sa_params 
+      print *, 'failed sample due to FPE', cur_sample, sa_params 
       hand_fpe = 1
    end function
 
