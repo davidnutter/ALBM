@@ -5,24 +5,58 @@ objects = $(sources:%.f90=%.o)
 modules = $(wildcard *.mod)
 outputs := $(wildcard bLakeJob.sub.*)
 
+## Note on weird logic below
+##
+## Some packages (like pnetcdf) on debian/ubuntu likes to put module files in
+## /usr/lib/x86_64-linux-gnu/fortran/$(fortran_variant). For some
+## occult reason, pnetcdf, openmpi and a few other things use a
+## fortran variant of gfortran-mod-15 rather than plain "gfortran"
+## So this stuff below ensures we can find the .mod file we need
+##
+## Not sure why .mod files are in /usr/lib; most places keep them in /usr/include
+##
+## Some discussion:
+##
+## https://fortran-lang.discourse.group/t/multiple-fortran-support-in-debian-ubuntu/6902
+##
+## Really this needs autoconf or (possibly) fpm
+##
+## Also pkg-config --variable fmoddir pnetcdf should print something useful (like it does for netcdf-fortran)
+## 
+FMODDIR:=/usr/lib/$(shell dpkg-architecture -qDEB_HOST_MULTIARCH)/fortran
+PNETCDF_MODDIR:=$(shell dirname `find $(FMODDIR) -iname 'pnetcdf.mod'`)
+NETCDF_FFLAGS:=$(shell pkg-config --cflags pnetcdf)
+NETCDF_LIBS:=$(shell pkg-config --libs pnetcdf)
+
 ifeq ($(DEBUG), 1)
-FFLAGS = -traceback -CB -fpe0 -g
+#Consider -finit-real=snan -finit-integer=-99999999 and -fsanitize=address
+FFLAGS = -fbacktrace -fbounds-check -ffpe-trap=invalid,zero,overflow -g
 else
-FFLAGS = -O3 -traceback -fpe0
+FFLAGS = -O3  -fbacktrace -ffpe-trap=invalid,zero,overflow
 endif
 ifeq ($(OPT), 1)
 FFLAGS += -fast
 endif
-FFLAGS += -I$(NETCDF_HOME)/include -I/usr/include
+
+FFLAGS += $(NETCDF_FFLAGS) -I$(PNETCDF_MODDIR)
+#FFLAGS += -I$(NETCDF_HOME)/include -I/usr/include
 #FFLAGS += -I$(NETCDF_HOME)/include $(LAPACK_INCLUDE_F95) -I/usr/include
-LDFLAGS =
-LIBS = -L$(NETCDF_HOME)/lib -lpnetcdf -L/usr/lib64
+LIBS += $(NETCDF_LIBS)
+#-L/usr/lib/x86_64-linux-gnu/hdf5/openmpi -lnetcdff -lpnetcdf 
+#LIBS = -L$(NETCDF_HOME)/lib -lpnetcdf -L/usr/lib64
 #LIBS = -L$(NETCDF_HOME)/lib -lpnetcdf -L/usr/lib64 $(LINK_LAPACK95) -lblas -llapack
 
 f90comp = mpif90 $(FFLAGS) -c
 f90link = mpif90 $(LDFLAGS) -o
 # source file search variable VPATH = : : :
 # Makefile
+
+show:
+	echo $(FMODDIR)
+	echo $(PNETCDF_MODDIR)
+
+all: ALBM.exe
+
 ALBM.exe :	$(objects)
 		$(f90link) ALBM.exe $(objects) $(LIBS)
 bLake.o :	bLake.f90				simulation_mod.o				\
@@ -107,7 +141,8 @@ bg_utilities_mod.o :		bg_utilities_mod.f90		bg_const_mod.o		\
 								$(f90comp) bg_utilities_mod.f90
 phy_utilities_mod.o :   phy_utilities_mod.f90   phy_const_mod.o			\
                         shr_ctrl_mod.o				shr_typedef_mod.o			\
-								shr_kind_mod.o
+								shr_kind_mod.o	\
+			shr_param_mod.o
 								$(f90comp) phy_utilities_mod.f90
 math_utilities_mod.o :	math_utilities_mod.f90	shr_kind_mod.o		\
 								shr_ctrl_mod.o
@@ -125,9 +160,9 @@ shr_ctrl_mod.o :	shr_ctrl_mod.f90		shr_kind_mod.o			\
 shr_typedef_mod.o :	shr_typedef_mod.f90	shr_kind_mod.o
 							$(f90comp) shr_typedef_mod.f90
 shr_kind_mod.o :	shr_kind_mod.f90
-						$(f90comp) -fno-range-check shr_kind_mod.f90
+						$(f90comp) -fallow-invalid-boz -fno-range-check shr_kind_mod.f90
 # Cleaning everything
-.PHONY :	clean
+.PHONY :	clean all show
 clean :		
 		-rm -f ALBM.exe $(objects) $(modules)
 # End of the makefile
