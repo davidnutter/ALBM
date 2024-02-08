@@ -40,6 +40,10 @@ contains
          print "(A, I0, A, I0)", 'Run lakes from ', minid, ' to ', maxid
       end if
 
+      !! BUG/Strangeness here: if lake range does not start with 1 (e.g. just
+      !! running for lake 24 only) and DEBUG is False then output
+      !! files are never created and the simulation will crash after the run
+      !! Not sure what the intent is but leave it for now
       call DoSimulationWarmup(minid, ntotlake)
 
       ! check the end sample id, if not end, refresh the sample range

@@ -58,7 +58,7 @@ module shr_ctrl_mod
    logical :: DEBUG, RESUBMIT
    ! simulation group
    logical :: Thermal_Module, Bubble_Module, Diagenesis_Module
-   logical :: Carbon_Module, Hydro_Module
+   logical :: Carbon_Module, Hydro_Module, Enable_Sediment
    integer :: Start_Year, Start_Month, Start_Day, End_Year
    integer :: End_Month, End_Day
    integer :: Spinup_Month, Spinup_Day, nSpinup

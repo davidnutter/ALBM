@@ -99,11 +99,17 @@ contains
          if (Thermal_Module) then
             curstep1 = curstep
             call ThermalModuleSetup()
-            call SedThermalModuleSetup()
+            if (Enable_Sediment) then
+               call SedThermalModuleSetup()
+            end if
+            
             call RungeKutta4(HeatEquation, mem_tw, adaptive_mode, Ttol, &
                              curstep1, nextstep1, m_waterTemp, m_tmpWaterTemp)
-            call RungeKutta4(SedHeatEquation, mem_ts, fixed_mode, Ttol, &
-                             curstep1, curstep1, m_sedTemp, m_tmpSedTemp)
+            
+            if (Enable_Sediment) then
+               call RungeKutta4(SedHeatEquation, mem_ts, fixed_mode, Ttol, &
+                                curstep1, curstep1, m_sedTemp, m_tmpSedTemp)
+            end if
             curstep = min(curstep,curstep1)
             nextstep = min(nextstep,nextstep1)
          end if
@@ -132,8 +138,10 @@ contains
          if (curstep1>curstep+e8 .and. Thermal_Module) then
             call RungeKutta4(HeatEquation, mem_tw, fixed_mode, Ttol, curstep, &
                              curstep, m_waterTemp, m_tmpWaterTemp)
-            call RungeKutta4(SedHeatEquation, mem_ts, fixed_mode, Ttol, &
-                             curstep, curstep, m_sedTemp, m_tmpSedTemp)
+            if (Enable_Sediment) then
+               call RungeKutta4(SedHeatEquation, mem_ts, fixed_mode, Ttol, &
+                    curstep, curstep, m_sedTemp, m_tmpSedTemp)
+            end if
          end if
          if (curstep2>curstep+e8 .and. Diagenesis_Module) then
             call RungeKutta4(DiagenesisEquation, mem_ch4, fixed_mode, SStol, &
@@ -147,8 +155,10 @@ contains
          end if
          if (Thermal_Module) then
             m_waterTemp = m_tmpWaterTemp
-            m_sedTemp = m_tmpSedTemp
-            call SedThermalModuleCallback()
+            if (Enable_Sediment) then
+               m_sedTemp = m_tmpSedTemp
+               call SedThermalModuleCallback()
+            end if
             call ThermalModuleCallback(curstep)
          end if
          if (Diagenesis_Module) then

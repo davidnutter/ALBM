@@ -206,7 +206,7 @@ contains
       namelist /general/ run_mode, lake_file, lakeid_file, lake_range, &
                          bthmtry_dir, param_dir, param_file
       namelist /simulation/ Thermal_Module, Bubble_Module, Diagenesis_Module, &
-                            Carbon_Module, Hydro_Module, Start_Year, &
+                            Carbon_Module, Hydro_Module, Enable_Sediment, Start_Year, &
                             Start_Month,  Start_Day, End_Year, End_Month, &
                             End_Day, Spinup_Month, Spinup_Day, nSpinup
       namelist /resolution/ NWLAYER, NSLAYER, NRLAYER 
