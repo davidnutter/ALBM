@@ -1,0 +1,67 @@
+Notes on creating data for a sample mesocosm
+
+The mesocosm is located in Lancaster so we use Windermere as a
+proxy. We assume the mesocosm is a cylinder, the diameter is 4m and
+the height/depth 3m. Thus surface area (Asurf) of 0.000012 km^2
+
+Add a record TestMesocosm to the Lakes_ISIMIP_id.list file and increase the count of lakes
+  ...
+  00000059       Wingra
+  00000060       TestMesocosm
+  
+Create a bathymetry file:
+
+  cat Bathymetry/bathymetry_TestMesocosm.dat 
+Layer #: 4
+------------------------------------
+Depth (m)     Area (m^2)
+         0              12 
+         1              12
+         2              12
+         3              12
+
+Copy the Windermere Parameters file to one for the TestMesocosm:
+
+   cp Parameters/optpar_Windermere.dat Parameters/optpar_TestMesocosm.dat
+   
+Create an observations file from the Windermere data, removing observations that are deeper than 4m:
+
+   perl -n -e 'if (/^2/) { @recs=split(/\s+/); if ($recs[1] <= 4.00) { print $_ }} elsif (/8772/) { s/8772/2193/; print; } else { print; }' Observations/tw_obs_Windermere.dat > Observations/tw_obs_TestMesocosm.dat
+
+Modify the Lakes_ISIMIP.nc file to copy windermere's record to the TestMesocosm record:
+
+   ncdump Lakes_ISIMIP.nc > /tmp/Lakes.CDL
+
+edit the file to make the following changes:
+
+* increase lake count by one
+* Generally take the 2nd to last value in each record (Windermere's) and add it
+  to the end of the record (for TestMesocosm)
+* For the following records use these values:
+  basin = 3
+  depth = 3
+  Asurf = 0.000012
+
+Then regenerate:
+
+  ncgen /tmp/Lakes.CDL -o /tmp/Lakes.nc
+
+Later, refer to this file in the mesocosm.bLake config file:
+
+  lake_file = '/tmp/Lakes.nc'
+
+Generate some met data from the Harp met data obtained from:
+"https://figshare.com/ndownloader/files/40168174
+
+  Rscript utils/makeInputFiles.R /scratch/ALBM_data/forcing_obs_Harp.nc /scratch/ALBM_data/forcing_obs_TestMesocosm.nc
+
+Modify/create mesocosm.bLake to set your parameters
+
+
+It may be possible to use param_file to subvert some of these steps. Longer-term the following improvements would help:
+
+* Single parameter file for a lake containing all the data for a
+  particular lake. We could probably avoid this by having simpler
+  tools for creating lake files for ensembles of lakes
+* Consistency check of parameters - e.g. depth from lake file vs depth
+  from bathymetry data
