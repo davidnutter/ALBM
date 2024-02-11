@@ -116,7 +116,12 @@ linePlotAgainstTime=function(time,x,Lake){#------------------------
         cols=colfunc(length(levels))
 
         ## t(mat[levels,]) - change for single layer plot
-        matplot(time,as.matrix(mat[levels,]),col=cols,lty=1,type='l',
+        if (nrow(mat[levels,]) > 1) {
+            trans_func = t
+        } else {
+            trans_func = as.matrix
+        }
+        matplot(time,trans_func(mat[levels,]),col=cols,lty=1,type='l',
                 main=paste0(long.name),
                 ylab=paste0(vname,' (',vunits,')'),
                 xlab='time')
@@ -195,18 +200,24 @@ for (file in threeDfiles){
 
     dims=dim(mat)
 
-    months=spinup+round(seq(15,366,30))
+    month_indexes=spinup+round(seq(15,366,30))
 
-    ii=depth<25 ##TODO: 25 should not be hard-coded 
-    matplot(t(as.matrix(mat[ii,months])),as.matrix(-depth[ii]),type='l', ##TODO: depth is messed up here due to having single layer
+    ii=depth<25 ##TODO: 25 should not be hard-coded
+    if (nrow(mat[ii,]) > 1) {
+        trans_func = function (x) { x }
+    } else {
+        trans_func = function (x) { t(as.matrix(x)) }
+    }
+    
+    matplot(trans_func(mat[ii,month_indexes]),as.matrix(-depth[ii]),type='l', ##TODO: depth is messed up here due to having single layer
             main=long.name,lty=1:12,
             xlab=paste0(vname,' (',vunits,')'),ylab='depth',
             col=cols,lwd=2,
-            #xlim=c(min(mat[ii,months]),1.2*max(mat[ii,months]))
+            #xlim=c(min(mat[ii,month_indexes]),1.2*max(mat[ii,month_indexes]))
             )
 
     if (vname=='dch4'){
-        legend('bottomleft',legend=ceiling((months-spinup)/30.4),col=cols,lty=1:12,
+        legend('bottomleft',legend=ceiling((month_indexes-spinup)/30.4),col=cols,lty=1:12,
                lwd=2,title='month',bty='n',cex=1.)
     }
 }
